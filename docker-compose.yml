@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_PASSWORD=EYA
+      - POSTGRES_USER=EYA
+      - POSTGRES_DB=virtualization
+    volumes:
+      - local_pg_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: EYA
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - internal
+
+  backend-app:
+    build: ./virtualization
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/EYA
+      - SPRING_DATASOURCE_USERNAME=EYA
+      - SPRING_DATASOURCE_PASSWORD=EYA
+      - SPRING_JPA_DDL-AUTO=update
+      - SPRING_DATASOURCE_PORT=2222
+    networks:
+      - internal
+
+  angular-app:
+    build:
+      context: ./virtualization-front
+      args:
+        configuration: ${CONFIGURATION:-production}
+    ports:
+      - "4000:4000"
+    environment:
+      - BACKEND_URL=http://backend-app:2222/
+      - SERVER_NAME=angular-app
+    entrypoint: /bin/sh -c "envsubst '$$BACKEND_URL $$SERVER_NAME' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    networks:
+      - internal
+
+volumes:
+  local_pg_data:
+  pgadmin-data:
+
+networks:
+  internal:
+    driver: bridge

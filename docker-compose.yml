@@ -6,7 +6,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=EYA
       - POSTGRES_USER=EYA
-      - POSTGRES_DB=virtualization
+      - POSTGRES_DB=EYA
     volumes:
       - local_pg_data:/var/lib/postgresql/data
     networks:
